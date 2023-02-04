@@ -1,5 +1,13 @@
 import socket
 import sys
+import threading
+
+def handle_clients(client_socket, client_address):
+    print("Connected to {}".format(client_address))
+    message = client_socket.recv(1024)
+    print(message.decode())
+    client_socket.send("dicks".encode())
+    client_socket.close()
 
 def start_server(port):
     serverPort = port
@@ -9,16 +17,9 @@ def start_server(port):
     serverSocket.listen()
     print("The server is ready to receive")
     while True:
-        client_socket, client_address = serverSocket.accept()
-        print("Connected to {}".format(client_address))
-        message = client_socket.recv(1024)
-        print(message.decode())
-        client_socket.send("dicks".encode())
-        client_socket.close()
-        #serverSocket.sendto("dicks", conn) 
-        #message, clientAddress = serverSocket.recvfrom(1024)
-        #modifiedMessage = message.decode().upper() 
-        #serverSocket.sendto("modifiedMessage.encode()", clientAddress)
+        clientSocket, clientAddress = serverSocket.accept()
+        client_thread = threading.Thread(target=handle_clients, args=(clientSocket, clientAddress))
+        client_thread.start()
 
 if __name__=="__main__":
     #take in argument port, which is then passed into start_server()
