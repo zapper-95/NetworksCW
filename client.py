@@ -1,6 +1,7 @@
 import socket
 import threading
 import sys
+import getpass
 def receive_message(client_socket):
     while True:
         modifiedMessage, serverAddress = client_socket.recvfrom(1024)
@@ -18,12 +19,14 @@ def start_client(username):
 
     while True:
         try:
-            message = input("Input lowercase sentence: ")
+            message = input(username + ": ")
+            #message = getpass.getpass("Input something: ")
             clientSocket.sendall(message.encode())
         except:
             print("Client disconnected")
-            break
-    clientSocket.close()
+            clientSocket.close()
+            sys.exit()
+
 
 
 if __name__ == "__main__":
