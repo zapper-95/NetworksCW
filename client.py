@@ -1,50 +1,40 @@
 import socket
 import threading
 import sys
-
-
+client_connected = True
 
 def receive_message(client_socket):
+    global client_connected
     while True:
         try:
             modifiedMessage = client_socket.recv(1024).decode()
-            print(modifiedMessage)
+            if(modifiedMessage):
+                print(modifiedMessage)
         except:
-            sys.exit(1)
-            
-#send message thread function
-def send_message(client_socket):
-    while True:
-        message = input()
-        if message == "q":
-            client_socket.sendall(message.encode())
+            client_socket.close()
+            print("Client disconnected")
+            client_connected = False
             return
-        else:
-            try:
-                client_socket.sendall(message.encode())
-            except:
-                print("could not send message")
 
 def start_client(username):
     serverName = "127.0.0.1"
     serverPort = 8080
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((serverName, serverPort))
-    client_socket.send(username.encode()) #send username as first message to server
+    clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    clientSocket.connect((serverName, serverPort))
+    clientSocket.send(username.encode())
 
-    receive_thread = threading.Thread(target=receive_message, args=(client_socket,))
-    
-
-    send_thread = threading.Thread(target=send_message, args=(client_socket,))
-
+    receive_thread = threading.Thread(target=receive_message, args=(clientSocket,))
     receive_thread.start()
-    send_thread.start()
 
-    #close both threads
-    receive_thread.join()
-    send_thread.join()
-    #stop program
-    client_socket.close()
+    while client_connected:
+        message = input()
+        if message == "q":
+            clientSocket.close()
+            receive_thread.join()
+            sys.exit()
+
+        clientSocket.sendall(message.encode())
+
 
 
 if __name__ == "__main__":
