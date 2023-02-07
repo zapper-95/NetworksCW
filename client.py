@@ -1,40 +1,42 @@
 import socket
 import threading
 import sys
-client_connected = True
 
-def receive_message(client_socket):
-    global client_connected
-    while True:
+
+def send_message(client_socket):
+    try:
+        while True:
+            message = input()
+            if message == "q":
+                client_socket.close()
+                return
+            client_socket.sendall(message.encode())
+    except:
+        #client_run = False
+        client_socket.close()
+
+def start_client(username):
+    client_run = True
+
+    serverName = "127.0.0.1"
+    serverPort = 8080
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((serverName, serverPort))
+    client_socket.send(username.encode())
+
+    send_thread = threading.Thread(target=send_message, args=(client_socket,))
+    send_thread.daemon = True #make the thread a daemon so that it will exit send_messsage if the server gets shut sudddenly
+    send_thread.start()
+
+    while client_run:
         try:
-            modifiedMessage = client_socket.recv(1024).decode()
-            if(modifiedMessage):
-                print(modifiedMessage)
+            message = client_socket.recv(1024).decode()
+            if(message is not None):
+                print(message)
         except:
             client_socket.close()
             print("Client disconnected")
-            client_connected = False
-            return
-
-def start_client(username):
-    serverName = "127.0.0.1"
-    serverPort = 8080
-    clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    clientSocket.connect((serverName, serverPort))
-    clientSocket.send(username.encode())
-
-    receive_thread = threading.Thread(target=receive_message, args=(clientSocket,))
-    receive_thread.start()
-
-    while client_connected:
-        message = input()
-        if message == "q":
-            clientSocket.close()
-            receive_thread.join()
-            sys.exit()
-
-        clientSocket.sendall(message.encode())
-
+            client_run = False
 
 
 if __name__ == "__main__":

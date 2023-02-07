@@ -5,19 +5,41 @@ import threading
 run_server = True
 
 current_connections = {}
+server_log = []
+
+def close_server(server_socket):
+    #close all connections and the server socket
+
+
+    server_socket.close()
+
+    print("Server shutting down")
+
+    with open('server.log', 'w') as f:
+        for line in server_log:
+            f.write("{}\n".format(line))
+
+
 
 def quit_client(client_address, username):
         current_connections[client_address].close()
         
-        send_to_all_connections("{} has left the server".format(username), current_connections[client_address])
+        disconnected_message = "{} has left the server".format(username)
+        server_log.append(disconnected_message)
+        broadcast(disconnected_message)
 
         del current_connections[client_address]
         print("Client disconnected")
         return
 
 
-def handle_clients(client_socket, client_address, username):
-    print("Connected to from {}".format(client_address))
+def handle_clients(client_socket, client_address, username, server_socket):
+    connected_to_message = "Connected to from {}".format(client_address)
+    server_log.append(connected_to_message)
+
+    print(connected_to_message)
+   
+
     client_socket.send("Welcome to the server!".encode())
     try:
         while True:
@@ -25,17 +47,19 @@ def handle_clients(client_socket, client_address, username):
             if message == "q":
                 quit_client(client_address, username)
                 return
-
+            elif message == "close server":
+                close_server(server_socket)
+                return
             else:
-                print(message)
-                send_to_all_connections(username + ": " + message, client_socket)
+                server_log.append(username + ": " + message)
+                broadcast(username + ": " + message, client_socket)
     except:
         quit_client(client_address, username)
         return
 
 
-def send_to_all_connections(message, ignore = None):
-    #write code to send a message to all clients connected to the server
+def broadcast(message, ignore = None):
+    #send a message to all clients connected to the server
     for connection in current_connections.values():
         if(connection != ignore):
             connection.send(message.encode())
@@ -46,25 +70,23 @@ def send_to_all_connections(message, ignore = None):
 def start_server(port):
     serverPort = port
     print(serverPort)
-    serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-    serverSocket.bind(("127.0.0.1", serverPort))
-    serverSocket.listen()
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+    server_socket.bind(("127.0.0.1", serverPort))
+    server_socket.listen()
     
     print("The server is ready to receive")
     try:
         while run_server:
-                clientSocket, clientAddress = serverSocket.accept()
-                username = clientSocket.recv(1024).decode() #send username as firs thing
+                clientSocket, clientAddress = server_socket.accept()
+                username = clientSocket.recv(1024).decode() #send username as first thing
                 current_connections[clientAddress] = clientSocket
             
-                send_to_all_connections("{} has joined the server".format(username), clientSocket)
-                client_thread = threading.Thread(target=handle_clients, args=(clientSocket, clientAddress, username))
+                broadcast("{} has joined the server".format(username), clientSocket)
+                client_thread = threading.Thread(target=handle_clients, args=(clientSocket, clientAddress, username, server_socket))
                 client_thread.start()
-                print("fuck")
             
     except:
-        print("Server shutting down")
-        serverSocket.close()
+        close_server(server_socket)
 
 if __name__=="__main__":
     #take in argument port, which is then passed into start_server()
