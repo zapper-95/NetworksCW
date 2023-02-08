@@ -7,10 +7,30 @@ def send_message(client_socket):
     try:
         while True:
             message = input()
-            if message == "q":
+
+            if message == "q": # so the user can quit
                 client_socket.close()
                 return
-            client_socket.sendall(message.encode())
+            elif message[:6] == "upload":
+                
+                filename = message[7:] #get the filename from the message
+
+                #open the file, and read its contents into a variable
+                try:
+                    #read in the bytes of the file
+                    with open(filename, 'rb') as f: 
+                        file_contents = f.read()
+
+                    #header contains message type, file size and filename
+                    header = ("f" + str(len(file_contents)) + "|" + filename + "|").encode()
+                except:
+                    print("File not found")
+                    continue
+
+                client_socket.sendall(header + file_contents)
+            else: #if the message is not a file, send it as a normal message
+                header = "m".encode()
+                client_socket.sendall(header + message.encode())
     except:
         print("Error, sending message")
         #close client socket, causing exception in main thread
@@ -26,7 +46,6 @@ def start_client(username, hostname, port):
     #attempts to connect to the server
     try:
         client_socket.connect((server_hostname, server_port))
-
     except:
         print("Could not connect to server")
         return
