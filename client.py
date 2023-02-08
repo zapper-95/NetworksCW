@@ -12,21 +12,33 @@ def send_message(client_socket):
                 return
             client_socket.sendall(message.encode())
     except:
-        #client_run = False
+        print("Error, sending message")
+        #close client socket, causing exception in main thread
         client_socket.close()
 
-def start_client(username):
+def start_client(username, hostname, port):
     client_run = True
 
-    serverName = "127.0.0.1"
-    serverPort = 8080
+    server_hostname = hostname
+    server_port = port
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((serverName, serverPort))
+
+    #attempts to connect to the server
+    try:
+        client_socket.connect((server_hostname, server_port))
+
+    except:
+        print("Could not connect to server")
+        return
+
     client_socket.send(username.encode())
 
+    #thread that constantly allows the users to send messages
     send_thread = threading.Thread(target=send_message, args=(client_socket,))
-    send_thread.daemon = True #make the thread a daemon so that it will exit send_messsage if the server gets shut sudddenly
+    send_thread.daemon = True 
     send_thread.start()
+    #thread made a daemon, so that if an exception occurs in the main
+    #thread, it will close the send_thread also
 
     while client_run:
         try:
@@ -40,4 +52,12 @@ def start_client(username):
 
 
 if __name__ == "__main__":
-    start_client(sys.argv[1])
+    #take username, hostname and port as input and validate from the user using sys.argv
+    try:
+        username, hostname, port = sys.argv[1], sys.argv[2], int(sys.argv[3])
+    except:
+        print("Please input a username, hostname and port")
+        print("try again using the following format: python client.py [username] [hostname] [port]")
+        sys.exit()
+
+    start_client(username, hostname, port)
