@@ -1,6 +1,7 @@
 import socket
 import sys
 import threading
+import os
 
 current_connections = {}
 server_log = []
@@ -33,8 +34,8 @@ def close_server(server_socket):
 def quit_client(client_address, username):
 
         # handle disconnection for client
-        current_connections[client_address].close()
-        broadcast("{} has left the server".format(username), current_connections[client_address])
+        current_connections[client_address][1].close()
+        broadcast("{} has left the server".format(username), current_connections[client_address][1])
         del current_connections[client_address]
         
 
@@ -56,7 +57,7 @@ def handle_client(client_socket, client_address, username):
             message = client_socket.recv(1024).decode()
             if message == "q": #lets the client quit
                 quit_client(client_address, username)
-                return     
+                return  
             else:
                 server_log.append(username + ": " + message)
                 print(username + ": " + message)
@@ -75,8 +76,8 @@ def broadcast(message, ignore = None):
     # can add a client to not to send to (i.e the person
     # who sent the message)
     for connection in current_connections.values():
-        if(connection != ignore):
-            connection.send(message.encode())
+        if(connection[1] != ignore):
+            connection[1].send(message.encode())
     
 
 
@@ -103,15 +104,34 @@ def start_server(port):
         while True:
                 client_socket, client_address = server_socket.accept()
 
-                # username sent as the first thing
-                username = client_socket.recv(1024).decode() 
-                current_connections[client_address] = client_socket
+                # username recieved as the first thing from the client
+                username = client_socket.recv(1024).decode()
+
+                # a list of lists of usernames and sockets for each client
+                name_socket_list = [i for i in current_connections.values()] 
+
+                # ensures no username is repeated by iterating through list of lists
+                # this also means each upload folder is distinct
+                if username in [i for sublist in name_socket_list for i in sublist]:
+                    client_socket.send("Username already in use".encode())
+                    client_socket.close()
+                    continue
+                
+                # adds for a client address a corresponding username and socket object
+                current_connections[client_address] = [username, client_socket]
 
                 # log for server
-                connected_to_message = "Connected to {} ({})".format(client_address, username)
+                connected_to_message = "Connected to by {} ({})".format(client_address, username)
                 server_log.append(connected_to_message)
                 print(connected_to_message)
-        
+
+                #this is where the client will store their files
+
+                # overwrite any folder with the same name
+                if os.path.exists(username):
+                    os.rmdir(username)
+
+                os.mkdir(username)
 
                 # when accepting new user, run a new handle_client thread
                 client_thread = threading.Thread(target=handle_client, args=(client_socket, client_address, username))

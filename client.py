@@ -32,21 +32,20 @@ def start_client(username, hostname, port):
         return
 
     client_socket.send(username.encode())
-
     #thread that constantly allows the users to send messages
     send_thread = threading.Thread(target=send_message, args=(client_socket,))
     send_thread.daemon = True 
     send_thread.start()
     #thread made a daemon, so that if an exception occurs in the main
     #thread, it will close the send_thread also
-
     while client_run:
         try:
             message = client_socket.recv(1024).decode()
-            if(message is not None):
+            if(message is not None and message != ""):
                 print(message)
+            else: #the message returned should not be empty
+                raise Exception
         except:
-            client_socket.close()
             print("Client disconnected")
             client_run = False
 
