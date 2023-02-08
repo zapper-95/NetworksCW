@@ -1,12 +1,18 @@
-Connected to by ('127.0.0.1', 50130) (Joe)
-Joe: hey
-Connected to by ('127.0.0.1', 50134) (Bob)
-Bob: hi
-Joe: Hey bob, long time no see!
-Bob: How's the networks coursework going?
-Joe: fAB, ITS been great fun
-Bob: that's good to here
-Joe: see you!
-Bob: bye
-Disconnected by ('127.0.0.1', 50130) (Joe)
-Disconnected by ('127.0.0.1', 50134) (Bob)
+Connected to by ('127.0.0.1', 50861) (Joe)
+Connected to by ('127.0.0.1', 50862) (Bob)
+Joe: Hey bob
+Bob: Hi Joe, how's it going?
+Joe: Not too bad. Just working on some coursework for networks atm
+Bob: Ah cool, how's that going then?
+Joe: Not bad, it's been pretty interesting learning about implementing servers with TCP. I think its been useful
+Bob: Nice, that's good to here
+Connected to by ('127.0.0.1', 50876) (George)
+George: Hey guys!!!
+Joe: Ah, I think I better go
+Bob: Well good luck, hope you get a good mark
+Joe: Me to
+Disconnected by ('127.0.0.1', 50861) (Joe)
+Bob: I better be going to, see you George
+George: Ah really!
+Disconnected by ('127.0.0.1', 50862) (Bob)
+Disconnected by ('127.0.0.1', 50876) (George)
