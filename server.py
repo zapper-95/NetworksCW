@@ -4,36 +4,40 @@ import threading
 
 run_server = True
 
+server_socket = None
+
 current_connections = {}
 server_log = []
 
-def close_server(server_socket):
-    #close all connections and the server socket
+def close_server():
 
-
-    server_socket.close()
-
+    global run_server
+    global server_socket
+    #clos
+    run_server = False
     print("Server shutting down")
+    server_socket.close()
 
     with open('server.log', 'w') as f:
         for line in server_log:
             f.write("{}\n".format(line))
+    #throw exception to exit the server
 
+    print("boop")
 
 
 def quit_client(client_address, username):
         current_connections[client_address].close()
         
-        disconnected_message = "{} has left the server".format(username)
-        server_log.append(disconnected_message)
-        broadcast(disconnected_message)
+        broadcast("{} has left the server".format(username), current_connections[client_address])
 
         del current_connections[client_address]
         print("Client disconnected")
         return
 
 
-def handle_clients(client_socket, client_address, username, server_socket):
+def handle_clients(client_socket, client_address, username):
+    global run_server
     connected_to_message = "Connected to from {}".format(client_address)
     server_log.append(connected_to_message)
 
@@ -48,11 +52,15 @@ def handle_clients(client_socket, client_address, username, server_socket):
                 quit_client(client_address, username)
                 return
             elif message == "close server":
-                close_server(server_socket)
-                return
+                server_socket.close()
+                print("boo")
+                raise RuntimeError("Server closed")        
             else:
                 server_log.append(username + ": " + message)
                 broadcast(username + ": " + message, client_socket)
+    except RuntimeError:
+        run_server = False
+        return
     except:
         quit_client(client_address, username)
         return
@@ -68,6 +76,9 @@ def broadcast(message, ignore = None):
 
 
 def start_server(port):
+    global run_server
+    global server_socket
+
     serverPort = port
     print(serverPort)
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
@@ -82,11 +93,13 @@ def start_server(port):
                 current_connections[clientAddress] = clientSocket
             
                 broadcast("{} has joined the server".format(username), clientSocket)
-                client_thread = threading.Thread(target=handle_clients, args=(clientSocket, clientAddress, username, server_socket))
+                client_thread = threading.Thread(target=handle_clients, args=(clientSocket, clientAddress, username))
+                client_thread.daemon = True
                 client_thread.start()
+                print(run_server)
             
     except:
-        close_server(server_socket)
+        close_server()
 
 if __name__=="__main__":
     #take in argument port, which is then passed into start_server()
